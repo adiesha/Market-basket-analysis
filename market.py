@@ -15,13 +15,6 @@ def main():
     a = df.groupby(['POS Txn'])['Dept'].apply(list).values.tolist()
     b = df.groupby(['POS Txn'])['POS Txn'].apply(list).values.tolist()
 
-    # print(df.groupby(['POS Txn'])['Dept'].apply(list).values.tolist())
-    # print(df.groupby(['POS Txn']).head())
-    # print(df.groupby(['POS Txn'])['Dept'].head())
-    # print(df.count())
-    # print(df.groupby(['POS Txn']).count())
-    # print(df.columns)
-    # print(df.groupby(['POS Txn'])['POS Txn'].head())
 
 if __name__ == "__main__":
     main()
