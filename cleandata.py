@@ -16,7 +16,7 @@ def removeDeptName():
     # removing department names from the Dept column
     df['Dept'] = df['Dept'].apply(lambda x: x.split(":")[0])
     print(df.head())
-    df.to_csv('txn_wih_dpt_ids')
+    df.to_csv('txn_wih_dpt_ids.csv')
 
 
 def createDeptIDToDeptmentNameCSV():
@@ -31,7 +31,7 @@ def createDeptIDToDeptmentNameCSV():
     print(df3.count())
     df4 = pd.DataFrame(df3.Dept.str.split(":", 1).tolist(), columns=['DeptId', 'DeptName'])
     print(df4.head())
-    df4.to_csv('dept_id_toDeptName')
+    df4.to_csv('dept_id_toDeptName.csv')
 
 
 def main():
