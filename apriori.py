@@ -61,11 +61,13 @@ class Node:
 class CandidateGraph:
     def __init__(self):
         self.root = Node(None, 0, [], 0)  # root node will have id 0 and empty set as the itemset
-        self.maxlevel = 0
+
 
     def getLevel(self, level):  # This should return the all the nodes in the given level
         None  # To be implemented
 
+    def getMaxLevel(self):
+        return self.root.maxLevelExtension
 
 # def computesupport(X, D, level):
 #     for row in D:
