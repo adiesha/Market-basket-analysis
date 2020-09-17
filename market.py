@@ -6,7 +6,7 @@ import seaborn as sns
 from matplotlib import rcParams
 
 def BinaryMatrixSetup(df):
-    [n_entries, n_columns] =df.shape
+    #[n_entries, n_columns] =df.shape
     temp = df.nunique()
     print('Number of unique elements in each column')
     print(temp)
