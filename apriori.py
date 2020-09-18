@@ -27,7 +27,7 @@ class Xset:
 
 
 class Node:
-    def __init__(self, parent, nodeid, x, level):
+    def __init__(self, parent, nodeid, x: Xset, level):
         self.parent = parent
         self.id = nodeid  # this is the sibling id determined by its parent
         self.nofchildren = 0  # this is the number of children a node has, this value should not be taken as the actual
@@ -39,13 +39,24 @@ class Node:
         self.support = 0
         self.maxLevelExtension = level
 
-    def addChild(self, child):
+    def addChild(self, child: Xset):
         if child is None:
             print("child you are trying to add is null")
+            raise NameError("child you are trying to add is null")
+        elif type(child) is not Xset:
+            print("child is not of Xset class")
+            raise NameError("child is not of Xset class")
         else:
             self.nofchildren += 1
-            self.children.append(Node(self, self.nofchildren, child, self.level + 1))
+            childNode = Node(self, self.nofchildren, child, self.level + 1)
+            self.children.append(childNode)
             self.updateMaxLevelExtension(self.level + 1)
+            return childNode
+
+    def deleteChild(self, child):
+        self.children.remove(child)
+        if len(self.children) == 0: # when there are no children in the node maxlevel extension should be its level itself
+            self.updateMaxLevelExtension(self.level)
 
     def getNumberOfChildren(self):
         return len(self.children)
@@ -58,16 +69,33 @@ class Node:
             self.parent.updateMaxLevelExtension(maxlevel)
 
 
+
 class CandidateGraph:
     def __init__(self):
-        self.root = Node(None, 0, [], 0)  # root node will have id 0 and empty set as the itemset
-
+        self.root = Node(None, 0, Xset([]), 0)  # root node will have id 0 and empty set as the itemset
+        self.levels = dict()
+        self.levels[0] = [self.root]
 
     def getLevel(self, level):  # This should return the all the nodes in the given level
-        None  # To be implemented
+        if level in self.levels:
+            return self.levels[level]  # To be implemented
+        else:
+            return None
 
     def getMaxLevel(self):
         return self.root.maxLevelExtension
+
+    def addChild(self, parent, node):
+        child = parent.addChild(node)
+        newLevel = parent.level + 1
+        if newLevel in self.levels:
+            self.levels[newLevel].append(child)
+        else:
+            self.levels[newLevel] = [child]
+
+    def deleteNode(self, node, level):
+        node.parent.deleteChild(node)
+        self.levels[level].remove(node)
 
 # def computesupport(X, D, level):
 #     for row in D:
@@ -106,23 +134,23 @@ def test(database):
     print(len(itemset))
     # itemset size should be 160 and it is
 
-    n0 = Node(None, 0, [], 0)
+    n0 = Node(None, 0, Xset([]), 0)
     print(n0.id)
     print(n0.level)
     print(n0.maxLevelExtension)
     print(n0.nofchildren)
-    print(n0.set)
+    print(n0.set.items)
     print(n0.support)
     print(n0.children)
 
-    n0.addChild(['a'])
-    n0.addChild(['b'])
+    a1 = n0.addChild(Xset(['a']))
+    b1 = n0.addChild(Xset(['b']))
 
     print(n0.id)
     print(n0.level)
     print(n0.maxLevelExtension)
     print(n0.nofchildren)
-    print(n0.set)
+    print(n0.set.items)
     print(n0.support)
     print(n0.children)
 
@@ -133,11 +161,40 @@ def test(database):
         print(child.level)
         print(child.maxLevelExtension)
         print(child.nofchildren)
-        print(child.set)
+        print(child.set.items)
         print(child.support)
         print(child.children)
         print("-----------------------")
 
+    n0.deleteChild(a1)
+    print(n0.maxLevelExtension)
+
+    for child in n0.children:
+        print(child.id)
+        print(child.level)
+        print(child.maxLevelExtension)
+        print(child.nofchildren)
+        print(child.set.items)
+        print(child.support)
+        print(child.children)
+        print("-----------------------")
+
+    n0.deleteChild(b1)
+    print(n0.maxLevelExtension)
+
+
+    candidateGraph = CandidateGraph()
+    candidateGraph.addChild(candidateGraph.root, Xset(['a']))
+    candidateGraph.addChild(candidateGraph.root, Xset(['b']))
+    print(candidateGraph.getLevel(1))
+    for n in candidateGraph.getLevel(1):
+        print(n.id)
+
+    testNode = candidateGraph.getLevel(1)[1]
+    candidateGraph.deleteNode(testNode, testNode.level)
+
+    for n in candidateGraph.getLevel(1):
+        print(n.id)
 
 def apriori():
     return None  # To be implemented
