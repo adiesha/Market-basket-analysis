@@ -4,6 +4,8 @@ import numpy as np
 import scipy.stats as stats
 import seaborn as sns
 from matplotlib import rcParams
+from itertools import permutations 
+from itertools import combinations 
 
 def BinaryMatrixSetup(df):
     #[n_entries, n_columns] =df.shape
@@ -75,12 +77,58 @@ def BinaryMatrixSetup(df):
     # print(binaryM.iloc[1500:1510,159])
     return binaryM
 
+def ComputeSupport_Kaveen(C_k, BinDB):
+    D = BinDB.to_numpy()
+    print(D)
+    (n_t,n_i) = D.shape 
+    print('Numberof transactions')
+    print(n_t)
+    print('Number of items')
+    print(n_i)
+    
+    (n_X,k) = C_k.shape
+    print('Number of k subsets')
+    print(n_X)
+    print('kth level')
+    print(k)
+  
+    sup_X =  np.zeros(n_X) 
+    for  i in range(n_t):
+        # print('Transaction number')
+        # print(i)
+        i_t = np.where(D[i,:]==1)[0]
+        print('Transcaction values')
+        print(i_t)
+        
+        i_K = np.asarray(list(combinations(i_t,k)))
+        print('item combinations per txn')
+        print(i_K)
+        
+        print('number of permutations')
+        n_i_K = len(i_K)
+        print(n_i_K)
+        for j in range(n_i_K):
+            print(i_K[j])
+            a =  C_k == i_K[j]
+            print(a)
+            if a.any:
+                idx = np.where(a == True)[1]
+                print(idx)
+                sup_X[idx] = sup_X[idx] +1
+            
+            
+    
+    print(sup_X)
+    return sup_X
+    
+
+
 def main():
     print("hello world!")
     df = pd.read_csv('txn_by_dept.csv')
     print(df.head())
 
-    binaryM = BinaryMatrixSetup(df)
+    
     #print(df.groupby(['POS Txn'])['Dept'].apply(list).values.tolist())
     #print(df.groupby(['POS Txn'])['POS Txn'].apply(list).values.tolist())
     #a = df.groupby(['POS Txn'])['Dept'].apply(list).values.tolist()
@@ -93,6 +141,13 @@ def main():
     # print(df.groupby(['POS Txn']).count())
     # print(df.columns)
     # print(df.groupby(['POS Txn'])['POS Txn'].head())
-
+    binaryM = BinaryMatrixSetup(df)
+    
+    k =2
+    C_k = np.asarray(list(combinations(range(160),k)))
+    print(C_k)
+    sup_X = ComputeSupport_Kaveen(C_k,binaryM)
+    
+    return binaryM
 if __name__ == "__main__":
     main()
