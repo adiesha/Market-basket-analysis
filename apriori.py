@@ -104,6 +104,7 @@ class CandidateGraph:
 
     def deleteNode(self, node, level):
         node.parent.deleteChild(node)
+        print(self.levels[level].index(node))
         self.levels[level].remove(node)
 
 
@@ -290,7 +291,7 @@ def apriori(database, itemset, minsup):
         computesupport(candidateGraph.getLevel(k), database, k)
         # for n in candidateGraph.getLevel(1):
         #     print("Items: " + n.set.items + " support: " + str(n.support))
-        for node in candidateGraph.getLevel(k):
+        for node in candidateGraph.getLevel(k).copy():
             if node.support >= minsup:
                 F.append(node.set)
             else:
@@ -316,7 +317,9 @@ def main():
     dpIddf = pd.read_csv('dept_id_toDeptName.csv', dtype={'DeptId': np.str})
     itemset = dpIddf['DeptId'].tolist()
 
-    apriori(database, itemset, 50)
+    f = apriori(database, itemset, 15)
+    for frequent in f:
+        print(frequent.items)
 
     # test2()
 
