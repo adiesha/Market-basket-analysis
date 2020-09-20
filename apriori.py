@@ -25,6 +25,8 @@ class Xset:
         s = list(self.items)
         return list(chain.from_iterable(combinations(s, r) for r in range(len(s) + 1)))
 
+    def __eq__(self, other):
+        return len(self.items)== len(other.items) and all(item in other.items for item in self.items)
 
 class Node:
     def __init__(self, parent, nodeid, x: Xset, level):
@@ -38,6 +40,7 @@ class Node:
         self.children = []
         self.support = 0
         self.maxLevelExtension = level
+        self.isactive = True
 
     def addChild(self, child: Xset):
         if child is None:
@@ -55,8 +58,9 @@ class Node:
 
     def deleteChild(self, child):
         self.children.remove(child)
-        if len(self.children) == 0: # when there are no children in the node maxlevel extension should be its level itself
-            self.updateMaxLevelExtension(self.level)
+        if len(
+                self.children) == 0:  # when there are no children in the node maxlevel extension should be its level itself
+            self.maxLevelExtension = self.level
 
     def getNumberOfChildren(self):
         return len(self.children)
@@ -68,7 +72,12 @@ class Node:
             self.maxLevelExtension = maxlevel
             self.parent.updateMaxLevelExtension(maxlevel)
 
+    def increaseSupport(self):
+        self.support += 1
+        self.set.support += 1
 
+    def __eq__(self, other):
+        return self.set == other.set
 
 class CandidateGraph:
     def __init__(self):
@@ -97,9 +106,56 @@ class CandidateGraph:
         node.parent.deleteChild(node)
         self.levels[level].remove(node)
 
-# def computesupport(X, D, level):
-#     for row in D:
-#         for x in X.powerset():
+
+    def removeAncestorsIfNecessary(self, node, level):
+        if node.parent is not None and node.parent.maxLevelExtension < level:
+            node.parent.isactive = False
+            self.deleteNode(node.parent, node.parent.level)
+            self.removeAncestorsIfNecessary(node.parent, level)
+
+
+def computesupport(ck, database, k):
+    for transaction in database:
+        for ksubset in Xset(transaction).ksubset(k):
+            tempnode = None
+            for node in ck:
+                if all(item in node.set.items for item in list(ksubset)):
+                    tempnode = node
+                    break
+            if tempnode is not None:
+                node.increaseSupport()
+
+
+def extendPrefixTree(ck, candidateGraph, level):
+    removeLilst = []
+    # we need to iterate a copy of Ck since we might remove values from the list
+    ckCopy = ck.copy()
+    for leaf in ckCopy:
+        if leaf.parent.isactive:
+            for childLeaf in leaf.parent.children:
+                a = leaf.id
+                b = childLeaf.id
+                if b > a:
+                    xabUnion = leaf.set.items + childLeaf.set.items
+                    xab = list(set(xabUnion))
+                    xabSet = Xset(xab)
+                    allXjExists = True
+                    for xj in xabSet.ksubset(len(xab) - 1):
+                        isXjExists = False
+                        for node in ckCopy:
+                            if all(item in node.set.items for item in list(xj)):
+                                isXjExists = True
+                                break
+                        if isXjExists is False:
+                            allXjExists = False
+                            break
+                    if allXjExists:
+                        candidateGraph.addChild(leaf, xabSet)
+            if leaf.getNumberOfChildren() == 0:
+                parentOfRemoveNode = leaf.parent
+                candidateGraph.deleteNode(leaf, leaf.level)
+                candidateGraph.removeAncestorsIfNecessary(leaf, leaf.level)
+        print("_+_")
 
 
 # testing method
@@ -108,9 +164,12 @@ def test(database):
         print(row)
     a = ['0023', '0043', '2322', '9890']
     ax = Xset(a)
-    print(ax.ksubset(1))
+    print(ax.ksubset(2))
     ff = ax.ksubset(1)
     print(type(ff[0]))
+
+    tupletolist = list(ff[0])
+    print(all(item in a for item in tupletolist))
 
     ff2 = ax.ksubset(3)
     print(ff2)
@@ -182,7 +241,6 @@ def test(database):
     n0.deleteChild(b1)
     print(n0.maxLevelExtension)
 
-
     candidateGraph = CandidateGraph()
     candidateGraph.addChild(candidateGraph.root, Xset(['a']))
     candidateGraph.addChild(candidateGraph.root, Xset(['b']))
@@ -193,26 +251,89 @@ def test(database):
     testNode = candidateGraph.getLevel(1)[1]
     candidateGraph.deleteNode(testNode, testNode.level)
 
+    print("+++++++++++++++++++++")
     for n in candidateGraph.getLevel(1):
         print(n.id)
+    candidateGraph.addChild(candidateGraph.root, Xset(['c']))
+    candidateGraph.addChild(candidateGraph.root, Xset(['b']))
+    print("+++++++++++++++++++++")
+    for n in candidateGraph.getLevel(1):
+        print(n.id)
+    print("--------------------------")
+    dbtest = [['a', 'b'], ['a'], ['c']]
+    computesupport(candidateGraph.getLevel(1), dbtest, 1)
 
-def apriori():
-    return None  # To be implemented
+    for n in candidateGraph.getLevel(1):
+        print(n.support)
+
+    candidateGraph.addChild(candidateGraph.getLevel(1)[0], Xset(['a', 'b']))
+    candidateGraph.addChild(candidateGraph.getLevel(1)[0], Xset(['a', 'c']))
+
+    for n in candidateGraph.getLevel(2):
+        print(n.id)
+
+    candidateGraph.addChild(candidateGraph.getLevel(2)[0], Xset(['a', 'b', 'c']))
+
+    candidateGraph.removeAncestorsIfNecessary(candidateGraph.getLevel(2)[1], 3)
+
+
+def apriori(database, itemset, minsup):
+    F = []
+    candidateGraph = CandidateGraph()
+
+    for item in itemset:
+        candidateGraph.addChild(candidateGraph.root, Xset([item]))
+
+    k = 1
+    while ((candidateGraph.getLevel(k) is not None) and (
+            len(candidateGraph.getLevel(k)) != 0)):
+        computesupport(candidateGraph.getLevel(k), database, k)
+        # for n in candidateGraph.getLevel(1):
+        #     print("Items: " + n.set.items + " support: " + str(n.support))
+        for node in candidateGraph.getLevel(k):
+            if node.support >= minsup:
+                F.append(node.set)
+            else:
+                candidateGraph.deleteNode(node, k)
+
+        extendPrefixTree(candidateGraph.getLevel(k), candidateGraph, k)
+        k = k + 1
+        print("calculated candidate graph for level {}", k)
+
+    print("Finished")
+    return F  # To be implemented
 
 
 def main():
     df = pd.read_csv('txn_wih_dpt_ids.csv', dtype={'Dept': np.str})  # read the department ids as strings
-    print(df.describe())
+
     print("Loaded txns with dpt ids")
     # following will contain the list of list that contains the dept ids of each transaction
     database = df.groupby(['POS Txn'])['Dept'].apply(list).values.tolist()
-    test(database)
+    # test(database)
 
-    # print(database)
+    # creating the itemset
+    dpIddf = pd.read_csv('dept_id_toDeptName.csv', dtype={'DeptId': np.str})
+    itemset = dpIddf['DeptId'].tolist()
 
-    # print(df.groupby(['POS Txn'])['POS Txn'].apply(list).values.tolist())
-    # a = df.groupby(['POS Txn'])['Dept'].apply(list).values.tolist()
-    # b = df.groupby(['POS Txn'])['POS Txn'].apply(list).values.tolist()
+    apriori(database, itemset, 50)
+
+    # test2()
+
+
+def test2():
+    a1  = Xset(['a', 'b'])
+    a2  = Xset(['a', 'b'])
+
+    if a1 == a2:
+        print("a1 wqual e2")
+
+    n1 = Node(None,0, a1, 0)
+    n2 = Node(None, 0, a2, 0)
+
+    if n1 == n2:
+        print("n1 and n2 equal")
+
 
 
 if __name__ == "__main__":
