@@ -124,6 +124,9 @@ def main():
         F[i] = list(combinations(['A', 'B', 'C', 'D', 'E'],i))
     # print(F)
 
+
+    F = apriori_test()
+
     """ a = ['A', 'B', 'C', 'D', 'E']
 
     ax = Xset(a)
@@ -150,7 +153,7 @@ def main():
 
     
 
-    #F = ([6 , 'B'], [5 ,'E', 'B''E' ])
+    
     AssociationRules(F, minconf)
 
 if __name__ == "__main__":
