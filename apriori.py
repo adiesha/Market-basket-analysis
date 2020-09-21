@@ -19,7 +19,13 @@ class Xset:
     # https://stackoverflow.com/questions/1482308/how-to-get-all-subsets-of-a-set-powerset
     def powerset(self):
         s = list(self.items)
-        return list(chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1)))
+        powersetintuples = list(chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1)))
+        powersetinList = []
+        for i in powersetintuples:
+            temp = list(i)
+            temp.sort()
+            powersetinList.append(temp)
+        return powersetinList
 
     def powersetWithEmptySet(self):
         s = list(self.items)
@@ -27,6 +33,12 @@ class Xset:
 
     def __eq__(self, other):
         return len(self.items) == len(other.items) and all(item in other.items for item in self.items)
+
+    def print(self, dptIdToDptName):
+        self.deptNames = []
+        for item in self.items:
+            self.deptNames.append(dptIdToDptName[item])
+        return str(self.deptNames)
 
 
 class Node:
@@ -115,6 +127,23 @@ class CandidateGraph:
             self.removeAncestorsIfNecessary(node.parent, level)
 
 
+class Rules:
+    def __init__(self, X, Y, Z, dtxn):
+        self.X = X
+        self.Y = Y
+        self.Z = Z
+        self.dtxn = dtxn
+        self.support = Z.support
+        self.rsup = self.support / dtxn
+        self.conf = self.support / X.support
+        self.lift = self.conf * self.dtxn / Y.support
+        self.leverage = (self.support - (X.support * Y.support)) / self.dtxn
+
+    def print(self, dptNames):
+        print(self.X.print(dptNames) + " -> " + self.Y.print(dptNames) + " " + str(self.support) + " " + str(
+            self.rsup) + " " + str(self.lift) + " " + str(self.leverage))
+
+
 def computesupport(ck, database, k):
     for transaction in database:
         for ksubset in Xset(transaction).ksubset(k):
@@ -154,6 +183,14 @@ def extendPrefixTree(ck, candidateGraph, level):
             if leaf.getNumberOfChildren() == 0:
                 candidateGraph.deleteNode(leaf, leaf.level)
                 candidateGraph.removeAncestorsIfNecessary(leaf, leaf.level)
+
+
+def loadDptNames():
+    dataframe = pd.read_csv('dept_id_toDeptName.csv', dtype={'DeptId': np.str})
+    dptIdToName = dict()
+    for index in dataframe.index:
+        dptIdToName[dataframe['DeptId'][index]] = dataframe['DeptName'][index]
+    return dptIdToName
 
 
 # testing method
@@ -319,11 +356,11 @@ def main():
         frequent.items.sort()
         print(frequent.items)
 
-    # test2()
+    # test2(f)
 
 
-def test2():
-    a1 = Xset(['a', 'b'])
+def test2(f):
+    a1 = Xset(['0961', '0984'])
     a2 = Xset(['a', 'b'])
 
     if a1 == a2:
@@ -334,6 +371,10 @@ def test2():
 
     if n1 == n2:
         print("n1 and n2 equal")
+
+    dptIdToName = loadDptNames()
+
+    print(a1.print(dptIdToName))
 
 
 if __name__ == "__main__":
