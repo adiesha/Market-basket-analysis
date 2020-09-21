@@ -308,7 +308,7 @@ def main():
     print("Loaded txns with dpt ids")
     # following will contain the list of list that contains the dept ids of each transaction
     database = df.groupby(['POS Txn'])['Dept'].apply(list).values.tolist()
-    # test(database)
+    test(database)
 
     # creating the itemset
     dpIddf = pd.read_csv('dept_id_toDeptName.csv', dtype={'DeptId': np.str})

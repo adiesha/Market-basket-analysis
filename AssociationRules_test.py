@@ -18,15 +18,20 @@ class Xset:
     # https://stackoverflow.com/questions/1482308/how-to-get-all-subsets-of-a-set-powerset
     def powerset(self):
         s = list(self.items)
-        return list(chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1)))
+        result = list(chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1)))
+        result2 = []
+        for i in result:
+            temp = list(i)
+            temp.sort()
+            result2.append(temp)
+        return result2
 
     def powersetWithEmptySet(self):
         s = list(self.items)
         return list(chain.from_iterable(combinations(s, r) for r in range(len(s) + 1)))
 
     def __eq__(self, other):
-        return len(self.items)== len(other.items) and all(item in other.items for item in self.items)
-
+        return len(self.items) == len(other.items) and all(item in other.items for item in self.items)
 
 
 class Node:
@@ -81,7 +86,6 @@ class Node:
         return self.set == other.set
 
 
-
 class CandidateGraph:
     def __init__(self):
         self.root = Node(None, 0, Xset([]), 0)  # root node will have id 0 and empty set as the itemset
@@ -107,15 +111,29 @@ class CandidateGraph:
 
     def deleteNode(self, node, level):
         node.parent.deleteChild(node)
-        print(self.levels[level].index(node))
         self.levels[level].remove(node)
-
 
     def removeAncestorsIfNecessary(self, node, level):
         if node.parent is not None and node.parent.maxLevelExtension < level:
             node.parent.isactive = False
             self.deleteNode(node.parent, node.parent.level)
             self.removeAncestorsIfNecessary(node.parent, level)
+
+
+class Rules:
+    def __init__(self, X, Y, Z, dtxn):
+        self.X = X  
+        self.Y = Y
+        self.Z = Z
+        self.dtxn = dtxn
+        self.support = Z.support
+        self.rsup = self.support/dtxn
+        self.conf = self.support/X.support
+        self.lift = self.conf*self.dtxn/Y.support
+        self.leverage = (self.support-(X.support*Y.support))/self.dtxn
+
+    def print(self):
+        print(str(self.X.items) + " -> " + str(self.Y.items) + " " + str(self.support) + " "+ str(self.rsup) + " "+ str(self.lift) + " "+ str(self.leverage))
 
 def computesupport(ck, database, k):
     for transaction in database:
@@ -128,8 +146,8 @@ def computesupport(ck, database, k):
             if tempnode is not None:
                 node.increaseSupport()
 
+
 def extendPrefixTree(ck, candidateGraph, level):
-    removeLilst = []
     # we need to iterate a copy of Ck since we might remove values from the list
     ckCopy = ck.copy()
     for leaf in ckCopy:
@@ -154,10 +172,9 @@ def extendPrefixTree(ck, candidateGraph, level):
                     if allXjExists:
                         candidateGraph.addChild(leaf, xabSet)
             if leaf.getNumberOfChildren() == 0:
-                parentOfRemoveNode = leaf.parent
                 candidateGraph.deleteNode(leaf, leaf.level)
                 candidateGraph.removeAncestorsIfNecessary(leaf, leaf.level)
-        # print("_+_")
+
 
 def apriori(database, itemset, minsup):
     F = []
@@ -180,16 +197,83 @@ def apriori(database, itemset, minsup):
 
         extendPrefixTree(candidateGraph.getLevel(k), candidateGraph, k)
         k = k + 1
-        print("calculated candidate graph for level {}", k)
+        print("calculated candidate graph for level: ", k)
 
     print("Finished")
     return F  # To be implemented
 
-def AssociationRules(F, minconf):
-    for frequent in F:
-        print
-        if frequent.items >= 2
-    Z = np.asarray(F[2:5]) # Modify according to frequency set
+def AssociationRules(f, minconf, dtxn):
+    ruleset = []
+    Z_set = filter(lambda x : len(x.items) >= 2, f)
+    for Z in Z_set:
+        # frequent.items.sort()
+        
+        
+        print('Element in Z') 
+        print(Z.items)
+        A = Z.powerset()
+        A.remove(A[-1])
+        # A = list(chain.from_iterable(combinations(z_item,i) for i in range(1,len(print(z_item.items)))))
+        print("A set")
+        print(A)
+
+        while len(A) !=0:
+            A_max = A[-1]
+            print("X value")
+            # print(X)
+            XsetTemp =Xset(list(A_max))
+            print('XsetTemp')
+            a = f.index(XsetTemp)
+            print(a)
+            X = f[a]
+            X.items.sort()
+            +
+            print(X.items)
+
+            A.remove(X.items)
+            print("A after removing X")
+            print(A)
+
+            #c = sup(Z[r][c])/sup(X)
+            conf = Z.support / X.support  
+            print('Confident')
+            print(conf)  
+            if conf >= minconf:
+                Y_set = Z.items.copy()
+                
+                print('Y set init')
+                print(Y_set)
+
+                # print(list(f[a].items))
+                for i in range(len(X.items)):
+                    if X.items[i] in Y_set :
+                        
+                        Y_set.remove(X.items[i])
+
+                YsetTemp =Xset(list(Y_set))
+                b = f.index(YsetTemp)
+                Y = f[b]
+                print('Y set')
+                print(Y.items)
+
+                print(X.items,'->',Y.items,'Support','Confidence:',conf)
+                newRule = Rules(X, Y, Z, dtxn)
+                ruleset.append(newRule)
+            else:
+                # W = list(chain.from_iterable(combinations(X.items,i) for i in range(1,len(X))))
+                W = Xset(X.items).powerset()
+                print('W set')
+                print(W)
+                for i in range(len(W)):
+                    if W[i] in A    :
+                        A.remove(W[i])
+                print('A after removing W set')
+                print(A)
+
+    return ruleset
+
+
+    """ Z = np.asarray(F[2:5]) # Modify according to frequency set
     print('Z values')
     print(Z)
     z_r = len(Z)
@@ -242,13 +326,13 @@ def AssociationRules(F, minconf):
 
 
 
-
+ """
 
 
 
 
 def main():
-    minconf = 0.8
+    minconf = 0.3
     #F = candidategraph()
     # F = np.asarray(list(combinations([1, 2, 3, 4, 5],r) for r in range(5)))
     # for i in range(5):
@@ -256,7 +340,11 @@ def main():
     # print(F)
 
 
-    
+    # a = ['A', 'B', 'C', 'D', 'E']
+
+    # ax = Xset(a)
+    # ff3 = ax.powerset()
+    # print(ff3)
 
     """ a = ['A', 'B', 'C', 'D', 'E']
 
@@ -293,9 +381,12 @@ def main():
     itemset = dpIddf['DeptId'].tolist()
 
     
-    F = apriori(database, itemset, 15)
+    F = apriori(database, itemset, 20)
     
-    AssociationRules(F, minconf)
+    rulesset = AssociationRules(F, minconf, len(database))
+    print("Rule          support        rsup        lift        leverage")
+    for rule in rulesset:
+        rule.print()
 
 if __name__ == "__main__":
     main()
