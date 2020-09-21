@@ -313,13 +313,13 @@ def main(argv):
     dptNames = loadDptNames()
     print("Rule\tConf\tSupport\trSup\tlift\tLeverage\tInterest*\tImprovement")
 
-    sortedlist = sorted(rulesset, key=lambda x: (x.interest, x.improvement, x.conf), reverse=True)
-    if k > len(sortedlist):
-        k = len(sortedlist)
+    rankedList = sorted(rulesset, key=lambda x: (x.interest, x.improvement, x.conf), reverse=True)
+    if k > len(rankedList):
+        k = len(rankedList)
 
     for i in range(0, k):
         print("Rank:", i + 1)
-        sortedlist[i].print(dptNames)
+        rankedList[i].print(dptNames)
 
 
 if __name__ == "__main__":
