@@ -1,4 +1,5 @@
 import itertools
+import sys
 from itertools import chain, combinations
 
 import numpy as np
@@ -128,7 +129,7 @@ class CandidateGraph:
 
 
 class Rules:
-    def __init__(self, X, Y, Z, dtxn):
+    def __init__(self, X, Y, Z, dtxn, max_conf_w):
         self.X = X
         self.Y = Y
         self.Z = Z
@@ -139,12 +140,14 @@ class Rules:
         self.lift = self.conf * self.dtxn / Y.support
         self.leverage = (Z.support / dtxn - (X.support * Y.support) / dtxn ** 2)
         self.interest = abs(1 - self.lift)
+        self.improvement = self.conf - max_conf_w
         # self.rank = 0.5 * self.conf + 0.5 * abs(1 - self.lift)
 
     def print(self, dptNames):
         print(self.X.print(dptNames) + " -> " + self.Y.print(dptNames) + "\t" + str(self.conf) + "\t" + str(
             self.support) + "\t" + str(
-            self.rsup) + "\t" + str(self.lift) + "\t" + str(self.leverage) + "\t" + str(self.interest))
+            self.rsup) + "\t" + str(self.lift) + "\t" + str(self.leverage) + "\t" + str(self.interest) + "\t" + str(
+            self.improvement))
 
 
 def computesupport(ck, database, k):
@@ -222,6 +225,22 @@ def apriori(database, itemset, minsup):
     return F  # To be implemented
 
 
+def max_conf_W_subset(X, Y, Z, f, dtxn):
+    W_SET = Xset(X.items).powerset()
+    W_SET.pop()
+    max = 0
+    for i in range(len(W_SET)):
+        a = f.index(Xset(W_SET[i]))
+        W = f[a]
+        YUW_SET = W.items + Y.items
+        b = f.index(Xset(YUW_SET))
+        YUW = f[b]
+        confWtoY = YUW.support / W.support
+        if confWtoY > max:
+            max = confWtoY
+    return max
+
+
 def AssociationRules(f, minconf, dtxn):
     ruleset = []
     Z_set = filter(lambda x: len(x.items) >= 2, f)
@@ -255,8 +274,9 @@ def AssociationRules(f, minconf, dtxn):
                 b = f.index(YsetTemp)
                 Y = f[b]
 
-                print(X.items, '->', Y.items, 'Support', Z.support, 'Confidence:', conf)
-                newRule = Rules(X, Y, Z, dtxn)
+                max_conf_W = max_conf_W_subset(X, Y, Z, f, dtxn)
+                # print(X.items, '->', Y.items, 'Support', Z.support, 'Confidence:', conf)
+                newRule = Rules(X, Y, Z, dtxn, max_conf_W)
                 ruleset.append(newRule)
             else:
 
@@ -269,9 +289,13 @@ def AssociationRules(f, minconf, dtxn):
     return ruleset
 
 
-def main():
-    minconf = 0.1
-    minsup = 5
+def main(argv):
+    print("Please input <minsupp(int)> <minconf(float)> <krules(int)>")
+    minsup = int(sys.argv[1])
+    minconf = float(sys.argv[2])
+    k = int(sys.argv[3])
+    print('minconf:', minconf, ' minsup:', minsup, ' krules:', k)
+
     df = pd.read_csv('txn_wih_dpt_ids.csv', dtype={'Dept': np.str})  # read the department ids as strings
 
     print("Loaded txns with dpt ids")
@@ -287,15 +311,15 @@ def main():
 
     rulesset = AssociationRules(F, minconf, len(database))
     dptNames = loadDptNames()
-    print("Rule\tconf\tsupport\trsup\tlift\tleverage\tinterest")
-    for rule in rulesset:
-        rule.print(dptNames)
+    print("Rule\tConf\tSupport\trSup\tlift\tLeverage\tInterest*\tImprovement")
 
-    print("++++++++++++++++++++")
-    sortedlist = sorted(rulesset, key=lambda x: (x.interest, x.conf), reverse=True)
-    for rule in sortedlist:
-        rule.print(dptNames)
+    sortedlist = sorted(rulesset, key=lambda x: (x.interest, x.improvement, x.conf), reverse=True)
+    if k > len(sortedlist):
+        k = len(sortedlist)
+
+    for i in range(0, k):
+        sortedlist[i].print(dptNames)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
