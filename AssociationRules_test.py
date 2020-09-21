@@ -138,7 +138,7 @@ class Rules:
         self.conf = self.support / X.support
         self.lift = self.conf * self.dtxn / Y.support
         self.leverage = (Z.support / dtxn - (X.support * Y.support) / dtxn ** 2)
-        self.interest = abs(1-self.lift)
+        self.interest = abs(1 - self.lift)
         # self.rank = 0.5 * self.conf + 0.5 * abs(1 - self.lift)
 
     def print(self, dptNames):
@@ -207,8 +207,7 @@ def apriori(database, itemset, minsup):
     while ((candidateGraph.getLevel(k) is not None) and (
             len(candidateGraph.getLevel(k)) != 0)):
         computesupport(candidateGraph.getLevel(k), database, k)
-        # for n in candidateGraph.getLevel(1):
-        #     print("Items: " + n.set.items + " support: " + str(n.support))
+
         for node in candidateGraph.getLevel(k).copy():
             if node.support >= minsup:
                 F.append(node.set)
@@ -227,44 +226,27 @@ def AssociationRules(f, minconf, dtxn):
     ruleset = []
     Z_set = filter(lambda x: len(x.items) >= 2, f)
     for Z in Z_set:
-        # frequent.items.sort()
 
-        # print('Element in Z')
-        # print(Z.items)
         A = Z.powerset()
         A.remove(A[-1])
-        # A = list(chain.from_iterable(combinations(z_item,i) for i in range(1,len(print(z_item.items)))))
-        # print("A set")
-        # print(A)
 
         while len(A) != 0:
             A_max = A[-1]
-            # print("X value")
-            # print(X)
+
             XsetTemp = Xset(list(A_max))
-            # print('XsetTemp')
+
             a = f.index(XsetTemp)
-            # print(a)
+
             X = f[a]
             X.items.sort()
 
-            # print(X.items)
-
             A.remove(X.items)
-            # print("A after removing X")
-            # print(A)
 
-            # c = sup(Z[r][c])/sup(X)
             conf = Z.support / X.support
-            # print('Confident')
-            # print(conf)
+
             if conf >= minconf:
                 Y_set = Z.items.copy()
 
-                # print('Y set init')
-                # print(Y_set)
-
-                # print(list(f[a].items))
                 for i in range(len(X.items)):
                     if X.items[i] in Y_set:
                         Y_set.remove(X.items[i])
@@ -272,22 +254,17 @@ def AssociationRules(f, minconf, dtxn):
                 YsetTemp = Xset(list(Y_set))
                 b = f.index(YsetTemp)
                 Y = f[b]
-                # print('Y set')
-                # print(Y.items)
 
                 print(X.items, '->', Y.items, 'Support', Z.support, 'Confidence:', conf)
                 newRule = Rules(X, Y, Z, dtxn)
                 ruleset.append(newRule)
             else:
-                # W = list(chain.from_iterable(combinations(X.items,i) for i in range(1,len(X))))
+
                 W = Xset(X.items).powerset()
-                # print('W set')
-                # print(W)
+
                 for i in range(len(W)):
                     if W[i] in A:
                         A.remove(W[i])
-                # print('A after removing W set')
-                # print(A)
 
     return ruleset
 
@@ -315,9 +292,10 @@ def main():
         rule.print(dptNames)
 
     print("++++++++++++++++++++")
-    sortedlist = sorted(rulesset, key = lambda x : (x.interest, x.conf), reverse=True)
+    sortedlist = sorted(rulesset, key=lambda x: (x.interest, x.conf), reverse=True)
     for rule in sortedlist:
         rule.print(dptNames)
+
 
 if __name__ == "__main__":
     main()
