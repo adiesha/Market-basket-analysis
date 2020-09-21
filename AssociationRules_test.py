@@ -137,11 +137,14 @@ class Rules:
         self.rsup = self.support / dtxn
         self.conf = self.support / X.support
         self.lift = self.conf * self.dtxn / Y.support
-        self.leverage = (self.support - (X.support * Y.support)) / self.dtxn
+        self.leverage = (Z.support / dtxn - (X.support * Y.support) / dtxn ** 2)
+        self.interest = abs(1-self.lift)
+        # self.rank = 0.5 * self.conf + 0.5 * abs(1 - self.lift)
 
     def print(self, dptNames):
-        print(self.X.print(dptNames) + " -> " + self.Y.print(dptNames) + " " + str(self.support) + " " + str(
-            self.rsup) + " " + str(self.lift) + " " + str(self.leverage))
+        print(self.X.print(dptNames) + " -> " + self.Y.print(dptNames) + "\t" + str(self.conf) + "\t" + str(
+            self.support) + "\t" + str(
+            self.rsup) + "\t" + str(self.lift) + "\t" + str(self.leverage) + "\t" + str(self.interest))
 
 
 def computesupport(ck, database, k):
@@ -226,40 +229,40 @@ def AssociationRules(f, minconf, dtxn):
     for Z in Z_set:
         # frequent.items.sort()
 
-        print('Element in Z')
-        print(Z.items)
+        # print('Element in Z')
+        # print(Z.items)
         A = Z.powerset()
         A.remove(A[-1])
         # A = list(chain.from_iterable(combinations(z_item,i) for i in range(1,len(print(z_item.items)))))
-        print("A set")
-        print(A)
+        # print("A set")
+        # print(A)
 
         while len(A) != 0:
             A_max = A[-1]
-            print("X value")
+            # print("X value")
             # print(X)
             XsetTemp = Xset(list(A_max))
-            print('XsetTemp')
+            # print('XsetTemp')
             a = f.index(XsetTemp)
-            print(a)
+            # print(a)
             X = f[a]
             X.items.sort()
 
-            print(X.items)
+            # print(X.items)
 
             A.remove(X.items)
-            print("A after removing X")
-            print(A)
+            # print("A after removing X")
+            # print(A)
 
             # c = sup(Z[r][c])/sup(X)
             conf = Z.support / X.support
-            print('Confident')
-            print(conf)
+            # print('Confident')
+            # print(conf)
             if conf >= minconf:
                 Y_set = Z.items.copy()
 
-                print('Y set init')
-                print(Y_set)
+                # print('Y set init')
+                # print(Y_set)
 
                 # print(list(f[a].items))
                 for i in range(len(X.items)):
@@ -269,29 +272,29 @@ def AssociationRules(f, minconf, dtxn):
                 YsetTemp = Xset(list(Y_set))
                 b = f.index(YsetTemp)
                 Y = f[b]
-                print('Y set')
-                print(Y.items)
+                # print('Y set')
+                # print(Y.items)
 
-                print(X.items, '->', Y.items, 'Support', 'Confidence:', conf)
+                print(X.items, '->', Y.items, 'Support', Z.support, 'Confidence:', conf)
                 newRule = Rules(X, Y, Z, dtxn)
                 ruleset.append(newRule)
             else:
                 # W = list(chain.from_iterable(combinations(X.items,i) for i in range(1,len(X))))
                 W = Xset(X.items).powerset()
-                print('W set')
-                print(W)
+                # print('W set')
+                # print(W)
                 for i in range(len(W)):
                     if W[i] in A:
                         A.remove(W[i])
-                print('A after removing W set')
-                print(A)
+                # print('A after removing W set')
+                # print(A)
 
     return ruleset
 
 
 def main():
-    minconf = 0.3
-
+    minconf = 0.1
+    minsup = 5
     df = pd.read_csv('txn_wih_dpt_ids.csv', dtype={'Dept': np.str})  # read the department ids as strings
 
     print("Loaded txns with dpt ids")
@@ -303,14 +306,18 @@ def main():
     dpIddf = pd.read_csv('dept_id_toDeptName.csv', dtype={'DeptId': np.str})
     itemset = dpIddf['DeptId'].tolist()
 
-    F = apriori(database, itemset, 20)
+    F = apriori(database, itemset, minsup)
 
     rulesset = AssociationRules(F, minconf, len(database))
     dptNames = loadDptNames()
-    print("Rule\tsupport\trsup\tlift\tleverage")
+    print("Rule\tconf\tsupport\trsup\tlift\tleverage\tinterest")
     for rule in rulesset:
         rule.print(dptNames)
 
+    print("++++++++++++++++++++")
+    sortedlist = sorted(rulesset, key = lambda x : (x.interest, x.conf), reverse=True)
+    for rule in sortedlist:
+        rule.print(dptNames)
 
 if __name__ == "__main__":
     main()
