@@ -4,6 +4,7 @@ from itertools import chain, combinations
 import numpy as np
 import pandas as pd
 
+
 class Xset:
     def __init__(self, itemlist):
         self.items = itemlist
@@ -32,6 +33,12 @@ class Xset:
 
     def __eq__(self, other):
         return len(self.items) == len(other.items) and all(item in other.items for item in self.items)
+
+    def print(self, dptIdToDptName):
+        self.deptNames = []
+        for item in self.items:
+            self.deptNames.append(dptIdToDptName[item])
+        return str(self.deptNames)
 
 
 class Node:
@@ -122,18 +129,20 @@ class CandidateGraph:
 
 class Rules:
     def __init__(self, X, Y, Z, dtxn):
-        self.X = X  
+        self.X = X
         self.Y = Y
         self.Z = Z
         self.dtxn = dtxn
         self.support = Z.support
-        self.rsup = self.support/dtxn
-        self.conf = self.support/X.support
-        self.lift = self.conf*self.dtxn/Y.support
-        self.leverage = (self.support-(X.support*Y.support))/self.dtxn
+        self.rsup = self.support / dtxn
+        self.conf = self.support / X.support
+        self.lift = self.conf * self.dtxn / Y.support
+        self.leverage = (self.support - (X.support * Y.support)) / self.dtxn
 
-    def print(self):
-        print(str(self.X.items) + " -> " + str(self.Y.items) + " " + str(self.support) + " "+ str(self.rsup) + " "+ str(self.lift) + " "+ str(self.leverage))
+    def print(self, dptNames):
+        print(self.X.print(dptNames) + " -> " + self.Y.print(dptNames) + " " + str(self.support) + " " + str(
+            self.rsup) + " " + str(self.lift) + " " + str(self.leverage))
+
 
 def computesupport(ck, database, k):
     for transaction in database:
@@ -176,6 +185,14 @@ def extendPrefixTree(ck, candidateGraph, level):
                 candidateGraph.removeAncestorsIfNecessary(leaf, leaf.level)
 
 
+def loadDptNames():
+    dataframe = pd.read_csv('dept_id_toDeptName.csv', dtype={'DeptId': np.str})
+    dptIdToName = dict()
+    for index in dataframe.index:
+        dptIdToName[dataframe['DeptId'][index]] = dataframe['DeptName'][index]
+    return dptIdToName
+
+
 def apriori(database, itemset, minsup):
     F = []
     candidateGraph = CandidateGraph()
@@ -202,14 +219,14 @@ def apriori(database, itemset, minsup):
     print("Finished")
     return F  # To be implemented
 
+
 def AssociationRules(f, minconf, dtxn):
     ruleset = []
-    Z_set = filter(lambda x : len(x.items) >= 2, f)
+    Z_set = filter(lambda x: len(x.items) >= 2, f)
     for Z in Z_set:
         # frequent.items.sort()
-        
-        
-        print('Element in Z') 
+
+        print('Element in Z')
         print(Z.items)
         A = Z.powerset()
         A.remove(A[-1])
@@ -217,46 +234,45 @@ def AssociationRules(f, minconf, dtxn):
         print("A set")
         print(A)
 
-        while len(A) !=0:
+        while len(A) != 0:
             A_max = A[-1]
             print("X value")
             # print(X)
-            XsetTemp =Xset(list(A_max))
+            XsetTemp = Xset(list(A_max))
             print('XsetTemp')
             a = f.index(XsetTemp)
             print(a)
             X = f[a]
             X.items.sort()
-            +
+
             print(X.items)
 
             A.remove(X.items)
             print("A after removing X")
             print(A)
 
-            #c = sup(Z[r][c])/sup(X)
-            conf = Z.support / X.support  
+            # c = sup(Z[r][c])/sup(X)
+            conf = Z.support / X.support
             print('Confident')
-            print(conf)  
+            print(conf)
             if conf >= minconf:
                 Y_set = Z.items.copy()
-                
+
                 print('Y set init')
                 print(Y_set)
 
                 # print(list(f[a].items))
                 for i in range(len(X.items)):
-                    if X.items[i] in Y_set :
-                        
+                    if X.items[i] in Y_set:
                         Y_set.remove(X.items[i])
 
-                YsetTemp =Xset(list(Y_set))
+                YsetTemp = Xset(list(Y_set))
                 b = f.index(YsetTemp)
                 Y = f[b]
                 print('Y set')
                 print(Y.items)
 
-                print(X.items,'->',Y.items,'Support','Confidence:',conf)
+                print(X.items, '->', Y.items, 'Support', 'Confidence:', conf)
                 newRule = Rules(X, Y, Z, dtxn)
                 ruleset.append(newRule)
             else:
@@ -265,7 +281,7 @@ def AssociationRules(f, minconf, dtxn):
                 print('W set')
                 print(W)
                 for i in range(len(W)):
-                    if W[i] in A    :
+                    if W[i] in A:
                         A.remove(W[i])
                 print('A after removing W set')
                 print(A)
@@ -273,102 +289,9 @@ def AssociationRules(f, minconf, dtxn):
     return ruleset
 
 
-    """ Z = np.asarray(F[2:5]) # Modify according to frequency set
-    print('Z values')
-    print(Z)
-    z_r = len(Z)
-    print(z_r)
-    for r in range(z_r):
-        z_c = len(Z[r])
-        for c in range(z_c):
-            print('Element in Z') 
-            print(Z[r][c])
-            A = list(chain.from_iterable(combinations(Z[r][c],i) for i in range(1,len(Z[r][c]))))
-            print("A set")
-            print(A)
-
-            while len(A) !=0:
-                X = A[-1]
-                print("X value")
-                print(X)
-
-                A.remove(X)
-                print("A after removing X")
-                print(A)
-
-                #c = sup(Z[r][c])/sup(X)
-                conf = 0.9    
-                if conf >= minconf:
-                    ZZ = list(Z[r][c])
-                    print('ZZ')
-                    print(ZZ)
-
-                    print(list(X))
-                    for i in range(len(X)):
-                        if X[i] in ZZ :
-                            Y = ZZ
-                            Y.remove(X[i])
-                    print('Y set')
-                    print(Y)
-
-                    print(X,'->',Y,'Support','Confidence:',conf)
-                else:
-                    W = list(chain.from_iterable(combinations(X,i) for i in range(1,len(X))))
-                    print('W set')
-                    print(W)
-                    for i in range(len(W)):
-                        if W[i] in A:
-                            A.remove(W[i])
-                    print('A after removing W set')
-                    print(A)
-
-
-
-
-
- """
-
-
-
-
 def main():
     minconf = 0.3
-    #F = candidategraph()
-    # F = np.asarray(list(combinations([1, 2, 3, 4, 5],r) for r in range(5)))
-    # for i in range(5):
-        # F[i] = list(combinations(['A', 'B', 'C', 'D', 'E'],i))
-    # print(F)
 
-
-    # a = ['A', 'B', 'C', 'D', 'E']
-
-    # ax = Xset(a)
-    # ff3 = ax.powerset()
-    # print(ff3)
-
-    """ a = ['A', 'B', 'C', 'D', 'E']
-
-    ax = Xset(a)
-
-    print(ax.ksubset(1))
-    ff = ax.ksubset(1)
-    print(type(ff[0]))
-
-    ff2 = ax.ksubset(3)
-    print(ff2)
-
-    ff3 = ax.powerset()
-    print(ff3)
-
-    for x in ff3[0]:
-        print(x)
-
-    for x in ff3[4]:
-        print(x)
-
-    ff4 = ax.powersetWithEmptySet()
-    print(ff4) """
-    
     df = pd.read_csv('txn_wih_dpt_ids.csv', dtype={'Dept': np.str})  # read the department ids as strings
 
     print("Loaded txns with dpt ids")
@@ -380,13 +303,14 @@ def main():
     dpIddf = pd.read_csv('dept_id_toDeptName.csv', dtype={'DeptId': np.str})
     itemset = dpIddf['DeptId'].tolist()
 
-    
     F = apriori(database, itemset, 20)
-    
+
     rulesset = AssociationRules(F, minconf, len(database))
-    print("Rule          support        rsup        lift        leverage")
+    dptNames = loadDptNames()
+    print("Rule\tsupport\trsup\tlift\tleverage")
     for rule in rulesset:
-        rule.print()
+        rule.print(dptNames)
+
 
 if __name__ == "__main__":
     main()
