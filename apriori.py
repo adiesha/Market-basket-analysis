@@ -26,7 +26,8 @@ class Xset:
         return list(chain.from_iterable(combinations(s, r) for r in range(len(s) + 1)))
 
     def __eq__(self, other):
-        return len(self.items)== len(other.items) and all(item in other.items for item in self.items)
+        return len(self.items) == len(other.items) and all(item in other.items for item in self.items)
+
 
 class Node:
     def __init__(self, parent, nodeid, x: Xset, level):
@@ -79,6 +80,7 @@ class Node:
     def __eq__(self, other):
         return self.set == other.set
 
+
 class CandidateGraph:
     def __init__(self):
         self.root = Node(None, 0, Xset([]), 0)  # root node will have id 0 and empty set as the itemset
@@ -104,9 +106,7 @@ class CandidateGraph:
 
     def deleteNode(self, node, level):
         node.parent.deleteChild(node)
-        print(self.levels[level].index(node))
         self.levels[level].remove(node)
-
 
     def removeAncestorsIfNecessary(self, node, level):
         if node.parent is not None and node.parent.maxLevelExtension < level:
@@ -128,7 +128,6 @@ def computesupport(ck, database, k):
 
 
 def extendPrefixTree(ck, candidateGraph, level):
-    removeLilst = []
     # we need to iterate a copy of Ck since we might remove values from the list
     ckCopy = ck.copy()
     for leaf in ckCopy:
@@ -153,10 +152,8 @@ def extendPrefixTree(ck, candidateGraph, level):
                     if allXjExists:
                         candidateGraph.addChild(leaf, xabSet)
             if leaf.getNumberOfChildren() == 0:
-                parentOfRemoveNode = leaf.parent
                 candidateGraph.deleteNode(leaf, leaf.level)
                 candidateGraph.removeAncestorsIfNecessary(leaf, leaf.level)
-        print("_+_")
 
 
 # testing method
@@ -299,7 +296,7 @@ def apriori(database, itemset, minsup):
 
         extendPrefixTree(candidateGraph.getLevel(k), candidateGraph, k)
         k = k + 1
-        print("calculated candidate graph for level {}", k)
+        print("calculated candidate graph for level: ", k)
 
     print("Finished")
     return F  # To be implemented
@@ -317,26 +314,26 @@ def main():
     dpIddf = pd.read_csv('dept_id_toDeptName.csv', dtype={'DeptId': np.str})
     itemset = dpIddf['DeptId'].tolist()
 
-    f = apriori(database, itemset, 15)
+    f = apriori(database, itemset, 20)
     for frequent in f:
+        frequent.items.sort()
         print(frequent.items)
 
     # test2()
 
 
 def test2():
-    a1  = Xset(['a', 'b'])
-    a2  = Xset(['a', 'b'])
+    a1 = Xset(['a', 'b'])
+    a2 = Xset(['a', 'b'])
 
     if a1 == a2:
         print("a1 wqual e2")
 
-    n1 = Node(None,0, a1, 0)
+    n1 = Node(None, 0, a1, 0)
     n2 = Node(None, 0, a2, 0)
 
     if n1 == n2:
         print("n1 and n2 equal")
-
 
 
 if __name__ == "__main__":
