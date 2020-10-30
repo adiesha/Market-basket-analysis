@@ -19,3 +19,4 @@ if aruguments that you want is: minsup = 15, minconf = 0.1 , krules = 25
     $command$ : python associationRulesAssesment.py 15 0.1 25
 
 Then python script will run the data and output you the k number of interesting rules that you want
+# Market_Basket_Analysis
